@@ -1,0 +1,60 @@
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from sklearn.model_selection import train_test_split, StratifiedKFold, 
+cross_val_score 
+from sklearn.preprocessing import StandardScaler, LabelEncoder 
+from sklearn.linear_model import LogisticRegression 
+from sklearn.metrics import (accuracy_score, confusion_matrix, 
+classification_report, roc_curve, auc) 
+data = pd.read_csv(r"D:\python\logistic regression dataset- 
+Social_Network_Ads.csv") 
+X = data.drop(columns=['User ID', 'Purchased']) 
+y = data['Purchased'] 
+X['Gender'] = LabelEncoder().fit_transform(X['Gender']) 
+scaler = StandardScaler() 
+X = scaler.fit_transform(X) 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, 
+random_state=42) 
+logreg = LogisticRegression(random_state=42) 
+logreg.fit(X_train, y_train) 
+y_pred = logreg.predict(X_test) 
+acc = accuracy_score(y_test, y_pred) 
+cm = confusion_matrix(y_test, y_pred) 
+report = classification_report(y_test, y_pred, output_dict=True) 
+TP = cm[1, 1] 
+TN = cm[0, 0] 
+FP = cm[0, 1] 
+FN = cm[1, 0] 
+recall = TP / (TP + FN) 
+specificity = TN / (TN + FP) 
+f1 = report['weighted avg']['f1-score'] 
+print("Accuracy:", acc) 
+print("Confusion Matrix:\n", cm) 
+print("Recall:", recall) 
+print("Specificity:", specificity) 
+print("F1-score:", f1) 
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42) 
+scores = cross_val_score(logreg, X, y, cv=kfold, scoring='accuracy') 
+print("K-Fold Accuracy Scores:", scores) 
+print("Average K-Fold Accuracy:", scores.mean()) 
+y_probs = logreg.predict_proba(X_test)[:, 1] 
+fpr, tpr, thresholds = roc_curve(y_test, y_probs) 
+roc_auc = auc(fpr, tpr) 
+plt.figure(figsize=(6, 4)) 
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}') 
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray') 
+plt.xlabel('False Positive Rate') 
+plt.ylabel('True Positive Rate') 
+plt.title('ROC Curve - Logistic Regression') 
+plt.legend() 
+plt.grid(True) 
+plt.show() 
+# Confusion Matrix Heatmap 
+plt.figure(figsize=(6, 4)) 
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues') 
+plt.xlabel('Predicted') 
+plt.ylabel('Actual') 
+plt.title('Confusion Matrix Heatmap - Logistic Regression') 
+plt.show()
