@@ -1,0 +1,96 @@
+import numpy as np 
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn.linear_model import Lasso, Ridge 
+from sklearn.preprocessing import PolynomialFeatures 
+from sklearn.model_selection import train_test_split 
+from sklearn.metrics import mean_squared_error 
+np.random.seed(42) 
+X = np.random.uniform(-3, 3, 100) # 100 random values for X 
+y = X**2 + np.random.randn(100) * 3 # Quadratic relationship 
+with some noise 
+# Reshape X for sklearn compatibility 
+X = X.reshape(-1, 1) 
+poly = PolynomialFeatures(degree=2) 
+X_poly = poly.fit_transform(X) 
+ 
+#Split the data into training and testing sets (80% train, 20% test) 
+X_train, X_test, y_train, y_test = train_test_split(X_poly, y, 
+test_size=0.2, random_state=42) 
+ 
+#Apply Lasso Regression 
+lasso = Lasso(alpha=0.1) # Regularization strength (you can adjust 
+alpha) 
+lasso.fit(X_train, y_train) 
+ 
+# Predict using Lasso model 
+lasso_train_predictions = lasso.predict(X_train) 
+lasso_test_predictions = lasso.predict(X_test) 
+ 
+#Apply Ridge Regression 
+ridge = Ridge(alpha=0.1) # Regularization strength (you can 
+adjust alpha) 
+ridge.fit(X_train, y_train) 
+# Predict using Ridge model 
+ridge_train_predictions = ridge.predict(X_train) 
+ridge_test_predictions = ridge.predict(X_test) 
+ 
+# Evaluate the models 
+lasso_train_mse = mean_squared_error(y_train, 
+lasso_train_predictions) 
+lasso_test_mse = mean_squared_error(y_test, 
+lasso_test_predictions) 
+ridge_train_mse = mean_squared_error(y_train, 
+ridge_train_predictions) 
+ridge_test_mse = mean_squared_error(y_test, 
+ridge_test_predictions) 
+ 
+print(f'Lasso Train Mean Squared Error: {lasso_train_mse}') 
+print(f'Lasso Test Mean Squared Error: {lasso_test_mse}') 
+print(f'Ridge Train Mean Squared Error: {ridge_train_mse}') 
+print(f'Ridge Test Mean Squared Error: {ridge_test_mse}') 
+ 
+plt.figure(figsize=(12, 6)) 
+ 
+# Scatter plot of original data 
+plt.scatter(X, y, color='gray', label='Data', alpha=0.5) 
+ 
+# Create a range of values for X to plot smooth predictions 
+X_range = np.linspace(-3, 3, 100).reshape(-1, 1) 
+X_range_poly = poly.transform(X_range) 
+ 
+# Plot predictions from Lasso and Ridge models on both training 
+and test sets 
+plt.plot(X_range, lasso.predict(X_range_poly), color='red', 
+label='Lasso Prediction') 
+plt.plot(X_range, ridge.predict(X_range_poly), color='blue', 
+label='Ridge Prediction') 
+# Plot Lasso and Ridge predictions on training data 
+plt.scatter(X_train[:, 1], lasso_train_predictions, color='red', 
+marker='x', label='Lasso Train Predictions') # X_train[:, 1] for X 
+values in polynomial space 
+plt.scatter(X_train[:, 1], ridge_train_predictions, color='blue', 
+marker='o', label='Ridge Train Predictions') # X_train[:, 1] for X 
+values in polynomial space 
+ 
+# Plot Lasso and Ridge predictions on test data 
+plt.scatter(X_test[:, 1], lasso_test_predictions, color='red', 
+marker='^', label='Lasso Test Predictions') # X_test[:, 1] for X 
+values in polynomial space 
+plt.scatter(X_test[:, 1], ridge_test_predictions, color='blue', 
+marker='s', label='Ridge Test Predictions') # X_test[:, 1] for X 
+values in polynomial space 
+ 
+plt.legend() 
+plt.xlabel('X') 
+plt.ylabel('y') 
+plt.title('Lasso vs Ridge Regression on Polynomial Data') 
+plt.show() 
+lasso_diff = lasso_test_predictions - 
+lasso_train_predictions[:len(lasso_test_predictions)] 
+ridge_diff = ridge_test_predictions - 
+ridge_train_predictions[:len(ridge_test_predictions)] 
+ 
+print("\nPrediction Differences (Test - Train):") 
+print(f'Lasso Prediction Differences: {lasso_diff}') 
+print(f'Ridge Prediction Differences: {ridge_diff}')
