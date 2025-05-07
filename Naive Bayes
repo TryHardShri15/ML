@@ -1,0 +1,91 @@
+# Import Libraries
+import numpy as np
+import pandas as pd
+from sklearn.metrics import auc
+from sklearn.model_selection import train_test_split, cross_val_score, KFold
+from sklearn.naive_bayes import GaussianNB
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import (
+    accuracy_score, confusion_matrix, classification_report,
+    roc_auc_score, roc_curve, ConfusionMatrixDisplay
+)
+import matplotlib.pyplot as plt
+
+# Load dataset
+df = pd.read_csv(r"D:\python\data.csv")  
+
+# Define features and target
+X = df['messages']          # Input feature (text)
+y = df['sentiment']         # Target label (e.g., Positive/Negative or 1/0)
+
+# If multi-class, filter to binary classification (optional)
+# For example:
+#y = y[y.isin([0, 1])]; X = X[y.index]
+X_text=df["messages"]
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(X_text).toarray()  # Convert sparse matrix to dense
+
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Model training
+nb = GaussianNB()
+nb.fit(X_train, y_train)
+y_pred = nb.predict(X_test)
+
+# Evaluation
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+TP = conf_matrix[1, 1]
+TN = conf_matrix[0, 0]
+FP = conf_matrix[0, 1]
+FN = conf_matrix[1, 0]
+
+error_rate = 1 - accuracy
+recall = TP / (TP + FN)
+specificity = TN / (TN + FP)
+precision = TP / (TP + FP)
+f1 = 2 * (precision * recall) / (precision + recall)
+
+# AUC Score
+y_proba = nb.predict_proba(X_test)[:, 1]
+aucu = roc_auc_score(y_test, y_proba)
+
+print("=== Evaluation Metrics ===")
+print(f"Accuracy: {accuracy}")
+print(f"Error Rate: {error_rate}")
+print(f"TP: {TP}, TN: {TN}, FP: {FP}, FN: {FN}")
+print(f"Recall: {recall}")
+print(f"Specificity: {specificity}")
+print(f"F1 Score: {f1}")
+print(f"AUC: {aucu:.4f}")
+
+# Cross-validation
+kf = KFold(n_splits=10, shuffle=True, random_state=42)
+cv_scores = cross_val_score(nb, X, y, cv=kf, scoring='accuracy')
+
+print("\n=== 10-Fold Cross Validation ===")
+print(f"Accuracy scores for each fold: {cv_scores}")
+print(f"Average CV Accuracy: {np.mean(cv_scores)}")
+
+# Confusion matrix display
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot(cmap='Blues')
+plt.title('Confusion Matrix - Naïve Bayes')
+plt.show()
+
+# ROC curve
+fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+roc_auc = auc(fpr, tpr)
+
+plt.figure(figsize=(6, 4))
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve - Naïve Bayes')
+plt.legend()
+plt.grid(True)
+plt.show()
