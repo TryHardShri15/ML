@@ -1,0 +1,98 @@
+import numpy as np 
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sklearn.model_selection import train_test_split, cross_val_score, 
+StratifiedKFold 
+from sklearn.preprocessing import StandardScaler, LabelEncoder 
+from sklearn.neural_network import MLPClassifier 
+from sklearn.metrics import accuracy_score, confusion_matrix, 
+classification_report, roc_curve, auc 
+ 
+# Step 1: Load Dataset 
+data = pd.read_csv(r"D:\python\Churn_Modelling.csv")  # Replace with 
+actual path 
+ 
+# Step 2: Preprocess Dataset 
+data = data.drop(columns=['RowNumber', 'CustomerId', 'Surname'])  # 
+Drop irrelevant columns 
+ 
+# Encode categorical features 
+data['Gender'] = LabelEncoder().fit_transform(data['Gender']) 
+data = pd.get_dummies(data, columns=['Geography'], drop_first=True) 
+ 
+# Step 3: Split features and target 
+X = data.drop('Exited', axis=1).values 
+y = data['Exited'].values 
+ 
+# Step 4: Train-Test Split 
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, 
+random_state=42) 
+ 
+# Step 5: Feature Scaling 
+scaler = StandardScaler() 
+X_train = scaler.fit_transform(X_train) 
+X_test = scaler.transform(X_test) 
+ 
+# Step 6: Train ANN Model 
+ann = MLPClassifier(hidden_layer_sizes=(50, 30), max_iter=500, 
+random_state=42) 
+ann.fit(X_train, y_train) 
+ 
+# Step 7: Predictions 
+y_pred = ann.predict(X_test) 
+ 
+# Step 8: Evaluation Metrics 
+acc = accuracy_score(y_test, y_pred) 
+cm = confusion_matrix(y_test, y_pred) 
+report = classification_report(y_test, y_pred, output_dict=True) 
+ 
+TP = cm[1][1] 
+TN = cm[0][0] 
+FP = cm[0][1] 
+FN = cm[1][0] 
+ 
+recall = TP / (TP + FN) 
+specificity = TN / (TN + FP) 
+f1 = report['weighted avg']['f1-score'] 
+ 
+print("Accuracy:", acc) 
+print("Confusion Matrix:\n", cm) 
+print("Recall:", recall) 
+print("Specificity:", specificity) 
+print("F1-score:", f1) 
+ 
+import seaborn as sns 
+ 
+# Confusion Matrix Visualization 
+plt.figure(figsize=(6, 4)) 
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, 
+            xticklabels=['Not Exited', 'Exited'], 
+            yticklabels=['Not Exited', 'Exited']) 
+plt.xlabel('Predicted') 
+plt.ylabel('Actual') 
+plt.title('Confusion Matrix - ANN') 
+plt.tight_layout() 
+plt.show() 
+ 
+ 
+# Step 9: K-Fold Cross-Validation 
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42) 
+scores = cross_val_score(ann, X, y, cv=kfold, scoring='accuracy') 
+print("K-Fold Accuracy Scores:", scores) 
+print("Average K-Fold Accuracy:", scores.mean()) 
+print("") 
+ 
+# Step 10: ROC Curve 
+y_probs = ann.predict_proba(X_test)[:, 1] 
+fpr, tpr, thresholds = roc_curve(y_test, y_probs) 
+roc_auc = auc(fpr, tpr) 
+ 
+plt.figure(figsize=(6, 4)) 
+plt.plot(fpr, tpr, label=f'AUC = {roc_auc:.2f}') 
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray') 
+plt.xlabel('False Positive Rate') 
+plt.ylabel('True Positive Rate') 
+plt.title('ROC Curve - ANN') 
+plt.legend() 
+plt.grid(True) 
+plt.show() 
